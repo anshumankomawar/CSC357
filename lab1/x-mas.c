@@ -10,23 +10,23 @@ int main(int argc, char* argv[]) {
 
   int level = 0;
   
-  while(level < 0) {
-    int spaces = ;
-    int stars = ;
-    
-    for(int leftspace = 0; leftspace <= ; leftspace++) {
-      printf(" ");
-    }
+  //while(level < 0) {
+  //  int spaces = ;
+  //  int stars = ;
+  //  
+  //  for(int leftspace = 0; leftspace <= ; leftspace++) {
+  //    printf(" ");
+  //  }
 
-    while(stars > 0) {
-    }
+  //  while(stars > 0) {
+  //  }
 
-    while(spaces > 0) {
-      printf(" ");
-    }
+  //  while(spaces > 0) {
+  //    printf(" ");
+  //  }
 
-    printf();
-  }
+  //  printf();
+  //}
 
   printf("%d\n", height);
   return 0;
