@@ -2,32 +2,39 @@
 
 int main(int argc, char* argv[]) {
   int height = -1;
+  int level = 1;
+  int spaces, stemlevel; 
+  int _;
 
   while(height < 0 || height > 10) {
     printf("Enter the height of the tree: ");
     scanf("%d", &height);
   }
 
-  int level = 0;
+  spaces = ((2*height) - 2) / 2;
   
-  while(level < 0) {
-    int spaces = ;
-    int stars = ;
+  while(level <= height) {
+    int stars = 2*level - 1;
     
-    for(int leftspace = 0; leftspace <= ; leftspace++) {
+    for(_ = 0; _ < spaces; _++) {
       printf(" ");
     }
 
-    while(stars > 0) {
+    for(_ = 0; _ < stars; _++) {
+      printf("*");
     }
 
-    while(spaces > 0) {
-      printf(" ");
-    }
-
-    printf();
+    printf("\n");
+    level += 1;
+    spaces -= 1;
   }
 
-  printf("%d\n", height);
+  for(stemlevel = 0; stemlevel < 3; stemlevel++) {
+    for(_ = 0; _ < ((2*height) - 2) / 2; _++) {
+      printf(" ");
+    }
+    printf("*\n");
+  }
+
   return 0;
 }
