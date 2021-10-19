@@ -56,7 +56,8 @@ int main(int argc, char **argv) {
   bitmap_header *header1, *header2, *header;
   int n;
   unsigned char *data1, *data2, *largerdata, *smallerdata;
-  char *input1 = argv[1], *input2 = argv[2], *output = "output.bmp";
+  char *input1 = "wolf.bmp", *input2 = "wolf.bmp", *output = "output.bmp";
+  double ratio = 0.5;
 
   file1 = fopen(input1, "rb");
   file2 = fopen(input2, "rb");
@@ -89,7 +90,6 @@ int main(int argc, char **argv) {
   unsigned char bottomRight[3];
   unsigned char green_image1, green_image2, green_result;
   unsigned char blue_image1, blue_image2, blue_result;
-  double ratio = 0.5;
 
   int maxHeight = fmax(height1, height2), minHeight = fmin(height1, height2);
   int maxWidth = fmax(width1, width2), minWidth = fmin(width1, width2);

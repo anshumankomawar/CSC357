@@ -13,6 +13,7 @@ int main(int argc, char* argv[]) {
 
   spaces = ((2*height) - 2) / 2;
   
+<<<<<<< HEAD
   while(level <= height) {
     int stars = 2*level - 1;
     
@@ -35,6 +36,25 @@ int main(int argc, char* argv[]) {
     }
     printf("*\n");
   }
+=======
+  //while(level < 0) {
+  //  int spaces = ;
+  //  int stars = ;
+  //  
+  //  for(int leftspace = 0; leftspace <= ; leftspace++) {
+  //    printf(" ");
+  //  }
+
+  //  while(stars > 0) {
+  //  }
+
+  //  while(spaces > 0) {
+  //    printf(" ");
+  //  }
+
+  //  printf();
+  //}
+>>>>>>> f915dd1ecd6891a6fa817901eb573d69c9d279a8
 
   return 0;
 }
