@@ -1,8 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/_types/_off_t.h>
-#include <sys/_types/_pid_t.h>
 #include <sys/mman.h>
 #include <unistd.h>
 #include <time.h>
@@ -181,7 +179,7 @@ int main() {
 
   clock_t end = clock();
   double cpu_time_used = ((double)(end - startTime))/CLOCKS_PER_SEC;
-  printf("\nCPU Time Used: %f seconds\n", cpu_time_used);
+  printf("\nTotal CPU Time Used: %f seconds\n", cpu_time_used);
 
   free(childPids);
 
