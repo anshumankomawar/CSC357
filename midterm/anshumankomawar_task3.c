@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <sys/time.h>
 #include <unistd.h>
 #include <time.h>
 #include <math.h>
@@ -65,6 +66,12 @@ unsigned char getColor(unsigned char *data, int width, int x, int y, int color) 
   return data[(x * 3) + (y * realWidth) + color];
 }
 
+int getTimeStamp() {
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  return tv.tv_sec*1000000 + tv.tv_usec;
+}
+
 int main() {
   char *filename1 = "nopadding.bmp", *filename2 = "yespadding.bmp";
   double ratio = 0.5;
@@ -84,7 +91,7 @@ int main() {
   int height1 = bmp1.fih.biHeight, height2 = bmp2.fih.biHeight;
 
   clock_t *times = malloc(numberOfChildren * sizeof(clock_t));
-  clock_t startTime = clock();
+  /*clock_t startTime = clock();*/
   
   int maxHeight = fmax(height1, height2), minHeight = fmin(height1, height2);
   int maxWidth = fmax(width1, width2), minWidth = fmin(width1, width2);
@@ -99,6 +106,8 @@ int main() {
 
   unsigned char *data = mmap(NULL, largerBMP.fih.biSizeImage, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
   int realWidth = (!(largerBMP.fih.biWidth % 4)) ? 3 * largerBMP.fih.biWidth : (largerBMP.fih.biWidth * 3) + 4 - (largerBMP.fih.biWidth * 3) % 4;
+
+  int startTime = getTimeStamp();
 
   for (int ii = 0; ii < numberOfChildren; ++ii) {
     if ((p = fork()) == 0) {
@@ -164,7 +173,6 @@ int main() {
     for (int ii = 0; ii < numberOfChildren; ++ii) {
       if (childPids[ii] > 0) {
         if (waitpid(childPids[ii], NULL, WNOHANG) != 0) {
-          /* Child is done */
           clock_t end = clock();
           double cpu_time_used = ((double)(end - times[ii]))/CLOCKS_PER_SEC;
           printf("\nCPU Time Used: %f seconds\n", cpu_time_used);
@@ -177,8 +185,9 @@ int main() {
     }
   } while (stillWaiting);
 
-  clock_t end = clock();
-  double cpu_time_used = ((double)(end - startTime))/CLOCKS_PER_SEC;
+  /*clock_t end = clock();*/
+  int endTime = getTimeStamp();
+  double cpu_time_used = ((double)(endTime - startTime))/CLOCKS_PER_SEC;
   printf("\nTotal CPU Time Used: %f seconds\n", cpu_time_used);
 
   free(childPids);
