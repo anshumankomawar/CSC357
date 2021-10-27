@@ -43,59 +43,59 @@ unsigned char *mymalloc(unsigned int size) {
     return (BYTE *)head + (sizeof(chunkhead));
   }
 
-
-  while(0 != head->next) {
+  while (0 != head->next) {
     if (!(head->info) && !(head->size - size)) {
       head->info = 1;
       return (BYTE *)head + (sizeof(chunkhead));
     }
-    
+
     if (head->info == 1 || size > head->size) {
       pch = head;
-    } else if ((head->info == 0 && head->size > size) && (smallest == 0 || smallest > head->size)) {
-        chc = (chunkhead *)((BYTE *)head + (head->size) + sizeof(chunkhead) - (size + sizeof(chunkhead)));
-        p = (BYTE *)head;
-        smallest = head->size;
+    } else if ((head->info == 0 && head->size > size) &&
+               (smallest == 0 || smallest > head->size)) {
+      chc = (chunkhead *)((BYTE *)head + (head->size) + sizeof(chunkhead) -
+                          (size + sizeof(chunkhead)));
+      p = (BYTE *)head;
+      smallest = head->size;
     }
     head = (chunkhead *)(head->next);
   }
 
-  switch(smallest) {
-    case 0: {
-      sbrk(size);
-      heapsize += size;
-      heapsize += sizeof(chunkhead);
+  switch (smallest) {
+  case 0: {
+    sbrk(size);
+    heapsize += size;
+    heapsize += sizeof(chunkhead);
 
-      pch = head;
+    pch = head;
 
-      head = (chunkhead *)((BYTE *)head + head->size);
-      head->size = size;
-      head->info = 1;
-      head->next = 0;
-      head->prev = (BYTE *)pch;
+    head = (chunkhead *)((BYTE *)head + head->size);
+    head->size = size;
+    head->info = 1;
+    head->next = 0;
+    head->prev = (BYTE *)pch;
 
-      pch->next = (BYTE *)head;
-
-      return sizeof(chunkhead) + (BYTE *)head;
-    }
-    default: {
-      head = (chunkhead *)p;
-      pch = (chunkhead *)(head->next);
-
-      head->info = 0;
-      chc->info = 1;
-
-      head->size -= (size) + sizeof(chunkhead);
-      chc->size = size;
-
-      chc->prev = (BYTE *)head;
-      head->next = (BYTE *)chc;
-      chc->next = (BYTE *)pch;
-      pch->prev = (BYTE *)chc;
-
-      return sizeof(chunkhead) + (BYTE *)head;
-    }
+    pch->next = (BYTE *)head;
+    break;
   }
+  default: {
+    head = (chunkhead *)p;
+    pch = (chunkhead *)(head->next);
+
+    head->info = 0;
+    chc->info = 1;
+
+    head->size -= (size) + sizeof(chunkhead);
+    chc->size = size;
+
+    chc->prev = (BYTE *)head;
+    head->next = (BYTE *)chc;
+    chc->next = (BYTE *)pch;
+    pch->prev = (BYTE *)chc;
+    break;
+  }
+  }
+  return sizeof(chunkhead) + (BYTE *)head;
 }
 
 void myfree(unsigned char *address) {
@@ -111,7 +111,9 @@ void myfree(unsigned char *address) {
     heapsize = heapsize - ch->size;
     brk((BYTE *)p - (ch->size - sizeof(chunkhead)));
 
-    if (!prev->info) {
+    if (prev->info) {
+      prev->next = ch->next;
+    } else {
       if (!prev->prev) {
         brk(heap);
         heap = 0;
@@ -121,59 +123,65 @@ void myfree(unsigned char *address) {
         prev->next = 0;
         brk(sbrk(0) - prev->size);
       }
-    } else {
-      prev->next = ch->next;
     }
 
-    if (!heapsize || !prev) {
+    if (!prev || !heapsize) {
       brk(heap);
       heap = 0;
       heapsize = 0;
     }
+  } else {
+    if (!((chunkhead *)(ch->prev)) && !((chunkhead *)(ch->next))->info) {
+      ch->size = sizeof(chunkhead) + ch->size + next->size;
+      ch->next = next->next;
+      ch->prev = 0;
 
-  } else if (!((chunkhead *)(ch->prev)) && !((chunkhead *)(ch->next))->info) {
-    ch->size = sizeof(chunkhead) + ch->size + next->size ;
-    ch->next = next->next; ch->prev = 0;
+      if (((chunkhead *)(ch->next))) ((chunkhead *)(ch->next))->prev = (BYTE *)ch;
+    } else if (((chunkhead *)(ch->next))->info == 0 &&
+               ((chunkhead *)(ch->prev))->info == 0) {
+      ch->size += (next->size);
+      ch->size += (prev->size);
+      ch->size += sizeof(chunkhead) * 2;
 
-    if (((chunkhead *)(ch->next))) ((chunkhead *)(ch->next))->prev = (BYTE *)ch;
-  } else if (((chunkhead *)(ch->prev)) == 0 && ((chunkhead *)(ch->next))->info != 0) {
-    ch->info = 0;
-  } else if (((chunkhead *)(ch->next))->info == 0 && ((chunkhead *)(ch->prev))->info == 0) {
-    ch->size += (next->size);
-    ch->size += (prev->size);
-    ch->size += sizeof(chunkhead) * 2;
-    
-    ((chunkhead *)(next->next))->prev = ((chunkhead *)(next->next)) ? (BYTE *)ch : ((chunkhead *)(next->next))->prev;
-    ((chunkhead *)(prev->prev))->next = ((chunkhead *)(prev->prev)) ? (BYTE *)ch : ((chunkhead *)(prev->prev))->next;
+      if (((chunkhead *)(next->next)) != 0)
+        ((chunkhead *)(next->next))->prev = (BYTE *)ch;
+      if (((chunkhead *)(prev->prev)) != 0)
+        ((chunkhead *)(prev->prev))->next = (BYTE *)ch;
 
-    ch->next = (next->next);
-    ch->prev = (prev->prev);
-    prev->size = ch->size;
-    prev->next = ch->next;
-    prev->prev = ch->prev;
+      ch->next = (next->next);
+      ch->prev = (prev->prev);
 
-  } else if (!next->info) {
-    ch->size += next->size;
-    ch->size += sizeof(chunkhead);
-    ch->next = next->next;
+      prev->size = ch->size;
+      prev->next = ch->next;
+      prev->prev = ch->prev;
+    } else if (((chunkhead *)(ch->prev)) == 0 &&
+               ((chunkhead *)(ch->next))->info != 0) { ch->info = 0;
 
-    if (((chunkhead *)(ch->next)) != 0) ((chunkhead *)(ch->next))->prev = (BYTE *)ch; 
-  } else if (!prev->info) {
-    prev->size += ch->size;
-    if (((chunkhead *)(prev->prev)) != 0) ((chunkhead *)(prev->prev))->next = (BYTE *)prev;
-    if (((chunkhead *)(prev->next)) != 0) ((chunkhead *)(prev->next))->prev = (BYTE *)prev;
+    } else if (!prev->info) {
+      prev->size += ch->size;
+      if (((chunkhead *)(prev->prev)) != 0)
+        ((chunkhead *)(prev->prev))->next = (BYTE *)prev;
+      if (((chunkhead *)(prev->next)) != 0)
+        ((chunkhead *)(prev->next))->prev = (BYTE *)prev;
 
-    prev->next = ch->next;
-    next->prev = (BYTE *)prev;
+      prev->next = ch->next;
+      next->prev = (BYTE *)prev;
+    } else if (!next->info) {
+      ch->size += next->size;
+      ch->size += sizeof(chunkhead);
+      ch->next = next->next;
+
+      if (((chunkhead *)(ch->next)) != 0)
+        ((chunkhead *)(ch->next))->prev = (BYTE *)ch;
+    }
   }
 }
-
 
 void analyze() {
   printf("\n--------------------------------------------------------------\n");
   if (!heap) {
     printf("no heap");
-printf("program break on address: %x\n", sbrk(0));
+    printf("program break on address: %x\n", sbrk(0));
     return;
   }
   chunkhead *ch = (chunkhead *)heap;
