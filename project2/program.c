@@ -20,82 +20,81 @@ int heapsize = 0;
 chunkhead *heap = NULL;
 
 unsigned char *mymalloc(unsigned int size) {
-  unsigned int smallest = 0;
+  unsigned int smallest = 0, pg = (size + sizeof(chunkhead)) / PAGESIZE;
+  size = (pg == 0) ? PAGESIZE : ((int)pg + 1) * PAGESIZE;
+  chunkhead *chc = 0, *head = heap, *pch = 0;
   BYTE *p = 0, *s = sbrk(0);
-  chunkhead *chc = 0, *ch = heap, *pch = 0;
-  unsigned int pg = (size + sizeof(chunkhead)) / PAGESIZE;
-  size = pg == 0 ? PAGESIZE : ((int)pg + 1) * PAGESIZE;
 
   if (!heapsize) {
     heap = (chunkhead *)sbrk(0);
     sbrk(size);
+    head = heap;
 
-    ch = heap;
-    ch->size = size;
-    ch->info = 1;
-    ch->prev = 0;
-    ch->next = 0;
+    head->size = size;
+    head->next = 0;
+    head->info = 1;
+    head->prev = 0;
 
     heapsize = size;
 
-    return (BYTE *)ch + (sizeof(chunkhead));
-  } else if (ch->size == size && ch->info == 0) {
-    ch->info = 1;
-    return (BYTE *)ch + (sizeof(chunkhead));
+    return (BYTE *)head + (sizeof(chunkhead));
+  } else if (head->size == size && head->info == 0) {
+    head->info = 1;
+    return (BYTE *)head + (sizeof(chunkhead));
   }
 
 
-  while(ch->next != 0) {
-    if (ch->info == 1 || size > ch->size) {
-      pch = ch;
-      ch = (chunkhead *)(ch->next);
-      continue;
+  while(0 != head->next) {
+    if (!(head->info) && !(head->size - size)) {
+      head->info = 1;
+      return (BYTE *)head + (sizeof(chunkhead));
     }
-    if (ch->info == 0 && ch->size == size) {
-      ch->info = 1;
-      return (BYTE *)ch + (sizeof(chunkhead));
+    
+    if (head->info == 1 || size > head->size) {
+      pch = head;
+    } else if ((head->info == 0 && head->size > size) && (smallest == 0 || smallest > head->size)) {
+        chc = (chunkhead *)((BYTE *)head + (head->size) + sizeof(chunkhead) - (size + sizeof(chunkhead)));
+        p = (BYTE *)head;
+        smallest = head->size;
     }
-    if ((ch->info == 0 && ch->size > size) && (smallest == 0 || smallest > ch->size)) {
-        chc = (chunkhead *)((BYTE *)ch + (ch->size) + sizeof(chunkhead) -
-                            (size + sizeof(chunkhead)));
-        p = (BYTE *)ch;
-        smallest = ch->size;
-    }
-    ch = (chunkhead *)(ch->next);
+    head = (chunkhead *)(head->next);
   }
 
-  if(!smallest) {
-    sbrk(size);
-    heapsize += size;
-    heapsize += sizeof(chunkhead);
+  switch(smallest) {
+    case 0: {
+      sbrk(size);
+      heapsize += size;
+      heapsize += sizeof(chunkhead);
 
-    pch = ch;
+      pch = head;
 
-    ch = (chunkhead *)((BYTE *)ch + ch->size);
-    ch->size = size;
-    ch->info = 1;
-    ch->next = 0;
-    ch->prev = (BYTE *)pch;
+      head = (chunkhead *)((BYTE *)head + head->size);
+      head->size = size;
+      head->info = 1;
+      head->next = 0;
+      head->prev = (BYTE *)pch;
 
-    pch->next = (BYTE *)ch;
+      pch->next = (BYTE *)head;
 
-    return (BYTE *)ch + sizeof(chunkhead);
-  } else {
-    ch = (chunkhead *)p;
-    pch = (chunkhead *)(ch->next);
+      return sizeof(chunkhead) + (BYTE *)head;
+    }
+    default: {
+      head = (chunkhead *)p;
+      pch = (chunkhead *)(head->next);
 
-    chc->info = 1;
-    ch->info = 0;
+      head->info = 0;
+      chc->info = 1;
 
-    ch->size -= (size) + sizeof(chunkhead);
-    chc->size = size;
+      head->size -= (size) + sizeof(chunkhead);
+      chc->size = size;
 
-    chc->prev = (BYTE *)ch;
+      chc->prev = (BYTE *)head;
+      head->next = (BYTE *)chc;
+      chc->next = (BYTE *)pch;
+      pch->prev = (BYTE *)chc;
 
-    ch->next = (BYTE *)chc;
-    chc->next = (BYTE *)pch;
-    pch->prev = (BYTE *)chc;
-    return (BYTE *)ch + sizeof(chunkhead);
+      return sizeof(chunkhead) + (BYTE *)head;
+    }
   }
 }
 
