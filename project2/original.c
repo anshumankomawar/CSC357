@@ -214,7 +214,7 @@ int main() {
   for (int i = 90; i < 100; i++) {
     myfree(a[i]);
   }
-  o
+
   cb = clock();
   analyze();
   printf("\nduration: %f\n", (double)(cb - ca));

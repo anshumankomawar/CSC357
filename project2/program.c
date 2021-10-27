@@ -44,28 +44,27 @@ unsigned char *mymalloc(unsigned int size) {
     return (BYTE *)ch + (sizeof(chunkhead));
   }
 
-  while (ch->next != 0) {
+
+  while(ch->next != 0) {
     if (ch->info == 1 || size > ch->size) {
       pch = ch;
       ch = (chunkhead *)(ch->next);
       continue;
-    } else if (ch->info == 0 && ch->size == size) {
+    }
+    if (ch->info == 0 && ch->size == size) {
       ch->info = 1;
-      ch = (chunkhead *)(ch->next);
       return (BYTE *)ch + (sizeof(chunkhead));
     }
-    if ((ch->info == 0 && ch->size > size) &&
-        (smallest == 0 || smallest > ch->size)) {
-      chc = (chunkhead *)((BYTE *)ch + (ch->size) + sizeof(chunkhead) -
-                          (size + sizeof(chunkhead)));
-      p = (BYTE *)ch;
-      smallest = ch->size;
+    if ((ch->info == 0 && ch->size > size) && (smallest == 0 || smallest > ch->size)) {
+        chc = (chunkhead *)((BYTE *)ch + (ch->size) + sizeof(chunkhead) -
+                            (size + sizeof(chunkhead)));
+        p = (BYTE *)ch;
+        smallest = ch->size;
     }
     ch = (chunkhead *)(ch->next);
   }
 
-  switch (smallest) {
-  case 0: {
+  if(!smallest) {
     sbrk(size);
     heapsize += size;
     heapsize += sizeof(chunkhead);
@@ -81,8 +80,7 @@ unsigned char *mymalloc(unsigned int size) {
     pch->next = (BYTE *)ch;
 
     return (BYTE *)ch + sizeof(chunkhead);
-  }
-  default: {
+  } else {
     ch = (chunkhead *)p;
     pch = (chunkhead *)(ch->next);
 
@@ -99,7 +97,6 @@ unsigned char *mymalloc(unsigned int size) {
     pch->prev = (BYTE *)chc;
     return (BYTE *)ch + sizeof(chunkhead);
   }
-  }
 }
 
 void myfree(unsigned char *address) {
@@ -110,89 +107,74 @@ void myfree(unsigned char *address) {
   chunkhead *next = ((chunkhead *)(ch->next));
   chunkhead *prev = ((chunkhead *)(ch->prev));
 
-  if (next == 0) {
-    heapsize -= ch->size;
+  if (!next) {
     BYTE *p = sbrk(0);
+    heapsize = heapsize - ch->size;
     brk((BYTE *)p - (ch->size - sizeof(chunkhead)));
 
-    if (prev == 0 || heapsize == 0) {
-      heapsize = 0;
-      brk(heap);
-      heap = 0;
-    }
-
-    if (prev->info == 0) {
-      if (prev->prev != 0) {
+    if (!prev->info) {
+      if (!prev->prev) {
+        brk(heap);
+        heap = 0;
+        heapsize = 0;
+      } else {
         prev = (chunkhead *)(prev->prev);
         prev->next = 0;
-        int z = brk(sbrk(0) - prev->size);
-      } else {
-        heapsize = 0;
-        int y = brk(heap);
-        heap = 0;
+        brk(sbrk(0) - prev->size);
       }
     } else {
       prev->next = ch->next;
     }
-  } else if (((chunkhead *)(ch->prev)) == 0 &&
-             ((chunkhead *)(ch->next))->info == 0) {
-    ch->size += next->size + sizeof(chunkhead);
-    ch->next = next->next;
-    ch->prev = 0;
-    if (((chunkhead *)(ch->next)) != 0) {
-      ((chunkhead *)(ch->next))->prev = (BYTE *)ch;
+
+    if (!heapsize || !prev) {
+      brk(heap);
+      heap = 0;
+      heapsize = 0;
     }
-  } else if (((chunkhead *)(ch->prev)) == 0 &&
-             ((chunkhead *)(ch->next))->info != 0) {
+
+  } else if (!((chunkhead *)(ch->prev)) && !((chunkhead *)(ch->next))->info) {
+    ch->size = sizeof(chunkhead) + ch->size + next->size ;
+    ch->next = next->next; ch->prev = 0;
+
+    if (((chunkhead *)(ch->next))) ((chunkhead *)(ch->next))->prev = (BYTE *)ch;
+  } else if (((chunkhead *)(ch->prev)) == 0 && ((chunkhead *)(ch->next))->info != 0) {
     ch->info = 0;
-  } else if (((chunkhead *)(ch->next))->info == 0 &&
-             ((chunkhead *)(ch->prev))->info == 0) {
-    ch->size += (next->size) + (prev->size) + sizeof(chunkhead) * 2;
-    if (((chunkhead *)(next->next)) != 0) {
-      ((chunkhead *)(next->next))->prev = (BYTE *)ch;
-    }
-    if (((chunkhead *)(prev->prev)) != 0) {
-      ((chunkhead *)(prev->prev))->next = (BYTE *)ch;
-    }
+  } else if (((chunkhead *)(ch->next))->info == 0 && ((chunkhead *)(ch->prev))->info == 0) {
+    ch->size += (next->size);
+    ch->size += (prev->size);
+    ch->size += sizeof(chunkhead) * 2;
+    
+    ((chunkhead *)(next->next))->prev = ((chunkhead *)(next->next)) ? (BYTE *)ch : ((chunkhead *)(next->next))->prev;
+    ((chunkhead *)(prev->prev))->next = ((chunkhead *)(prev->prev)) ? (BYTE *)ch : ((chunkhead *)(prev->prev))->next;
+
     ch->next = (next->next);
     ch->prev = (prev->prev);
     prev->size = ch->size;
     prev->next = ch->next;
     prev->prev = ch->prev;
-  } else if (next->info == 0) {
-    ch->size += next->size + sizeof(chunkhead);
+
+  } else if (!next->info) {
+    ch->size += next->size;
+    ch->size += sizeof(chunkhead);
     ch->next = next->next;
-    if (((chunkhead *)(ch->next)) != 0) {
-      ((chunkhead *)(ch->next))->prev = (BYTE *)ch;
-    }
-  } else if (prev->info == 0) {
+
+    if (((chunkhead *)(ch->next)) != 0) ((chunkhead *)(ch->next))->prev = (BYTE *)ch; 
+  } else if (!prev->info) {
     prev->size += ch->size;
-    if (((chunkhead *)(prev->prev)) != 0) {
-      ((chunkhead *)(prev->prev))->next = (BYTE *)prev;
-    }
-    if (((chunkhead *)(next->next)) != 0) {
-      ((chunkhead *)(ch->next))->prev = (BYTE *)prev;
-    }
+    if (((chunkhead *)(prev->prev)) != 0) ((chunkhead *)(prev->prev))->next = (BYTE *)prev;
+    if (((chunkhead *)(prev->next)) != 0) ((chunkhead *)(prev->next))->prev = (BYTE *)prev;
+
     prev->next = ch->next;
     next->prev = (BYTE *)prev;
   }
 }
 
-chunkhead *get_last_chunk() {
-  if (!heap) {
-    return NULL;
-  }
-
-  chunkhead *ch = (chunkhead *)heap;
-  for (; ch->next; ch = (chunkhead *)ch->next)
-    ;
-  return ch;
-}
 
 void analyze() {
   printf("\n--------------------------------------------------------------\n");
   if (!heap) {
     printf("no heap");
+printf("program break on address: %x\n", sbrk(0));
     return;
   }
   chunkhead *ch = (chunkhead *)heap;
@@ -205,6 +187,17 @@ void analyze() {
     printf("      \n");
   }
   printf("program break on address: %x\n", sbrk(0));
+}
+
+chunkhead *get_last_chunk() {
+  if (!heap) {
+    return NULL;
+  }
+
+  chunkhead *ch = (chunkhead *)heap;
+  for (; ch->next; ch = (chunkhead *)ch->next)
+    ;
+  return ch;
 }
 
 int main() {
